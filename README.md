@@ -4,9 +4,9 @@ R package to predict Net Primary Productivity (NPP) from the relative abundance
 of individual brGDGTs, using a centred log-ratio (CLR) transformation and a
 pre-trained random forest model. It includes diagnostic tools to assess
 whether new samples fall within the brGDGT composition space of the training
-data. When mean annual temperature and precipitation are available, the package
-also computes potential NPP with the Miami and Thornthwaite Memorial models,
-allowing comparison between climate-based and brGDGT-based NPP estimates to
+data. When mean annual temperature and total annual precipitation are available,
+the package also computes potential NPP with the Miami and Thornthwaite Memorial
+models, allowing comparison between climate-based and brGDGT-based NPP estimates to
 identify deviations from climatic expectations.
 
 ## Installation

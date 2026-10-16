@@ -95,7 +95,8 @@ once the temperature model is available.
 
 # Potential NPP from climate
 
-When mean annual temperature and precipitation are available (here simulated),
+When mean annual temperature and total annual precipitation are available
+(here simulated),
 potential NPP can be estimated with the Miami model or the Thornthwaite
 Memorial model.
 

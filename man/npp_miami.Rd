@@ -12,7 +12,8 @@ npp_thornthwaite(mat, map, id = NULL)
 \arguments{
 \item{mat}{Mean annual temperature (degrees C).}
 
-\item{map}{Mean annual precipitation (mm), same length as `mat`.}
+\item{map}{Total annual precipitation (mm per year), as a long-term average
+of yearly totals; not mean monthly precipitation. Same length as `mat`.}
 
 \item{id}{Optional sample identifiers; defaults to `seq_along(mat)`.}
 }
@@ -23,7 +24,7 @@ An `npp_climate` data frame with columns `id`, `mat`, `map`, `npp`
 }
 \description{
 Predicts potential Net Primary Productivity (NPP) from mean
-  annual temperature and precipitation.
+  annual temperature and total annual precipitation.
 
   `npp_miami()` uses the Miami model (Lieth 1975): NPP is the lower of a
   temperature-limited and a precipitation-limited estimate.
