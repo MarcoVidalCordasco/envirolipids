@@ -2,9 +2,9 @@
 #'
 #' A dataset containing brGDGT measurements from 50 natural archive samples
 #' to demonstrate the package functionality. The data includes fractional
-#' abundances of 15 brGDGT compounds and sample ages.
+#' abundances of 15 brGDGT compounds and sample ages (years BP).
 #'
-#' @format A data frame with 50 rows and 17 variables:
+#' @format A data frame with 50 rows and 17 variables (sample ID, 15 brGDGTs and Age):
 #' \describe{
 #'   \item{ID}{Sample identifier (numeric)}
 #'   \item{fIIIa}{brGDGT IIIa fractional abundance}
@@ -22,11 +22,12 @@
 #'   \item{fIa}{brGDGT Ia fractional abundance}
 #'   \item{fIb}{brGDGT Ib fractional abundance}
 #'   \item{fIc}{brGDGT Ic fractional abundance}
+#'   \item{Age}{Sample age (years BP)}
 #' }
 #'
 #' @details
 #' The dataset contains 50 samples from a sediment core. All brGDGT abundances are
-#' expressed as percentages (should sum to 1 per sample).
+#' expressed as fractions (summing to 1 per sample).
 #'
 #' @source Natural archive samples. For demonstration purposes only.
 #'

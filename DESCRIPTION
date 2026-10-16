@@ -1,4 +1,4 @@
-Package: brGDGTNPP
+Package: envirolipids
 Type: Package
 Title: Predict NPP from brGDGT data
 Version: 0.1.0
@@ -10,23 +10,22 @@ Authors@R: c(
            email = "am315@cam.ac.uk", 
            role = "aut")
   )
-Description: A tool to predict Net Primary Productivity (NPP) from relative abundance (%) of
-    individual brGDGTs using centered log-ratio (CLR) transformation and a pre-trained 
-    random forest model. Includes diagnostic tools to assess whether new 
-    samples fall within the brGDGT composition space of the training data, 
-    identifying potentially unreliable predictions. When mean annual 
-    temperature and precipitation are available, the package also computes 
-    potential NPP using the Miami model, allowing comparison 
-    between climate-based and brGDGT-based NPP estimates to identify 
-    deviations from climatic expectations.
+Description: A tool to predict Net Primary Productivity (NPP) from relative
+    abundance of individual brGDGTs using centered log-ratio (CLR)
+    transformation and a pre-trained random forest model. Includes diagnostic
+    tools to assess whether new samples fall within the brGDGT composition
+    space of the training data, identifying potentially unreliable
+    predictions. When mean annual temperature and precipitation are
+    available, the package also computes potential NPP using the Miami and
+    Thornthwaite Memorial models, allowing comparison between climate-based
+    and brGDGT-based NPP estimates to identify deviations from climatic
+    expectations.
 Depends: R (>= 3.5.0)
-Imports: compositions, randomForest, stats, utils, ggplot2, gridExtra,
-        reshape2, ranger, caret, readxl, plotly, geosphere, grDevices
-Suggests: knitr, rmarkdown, ggtern
+Imports: ggplot2 (>= 3.4.0), randomForest, stats
+Suggests: knitr, maps, rmarkdown, testthat (>= 3.0.0)
 VignetteBuilder: knitr
 License: MIT
 Encoding: UTF-8
 LazyData: true
-NeedsCompilation: no
-Packaged: 2026-03-02 20:32:09 UTC; vidalma
+Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.0

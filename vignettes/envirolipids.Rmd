@@ -1,0 +1,136 @@
+---
+title: "envirolipids: Complete Workflow Tutorial"
+author: "Vidal-Cordasco, M. and Manica, A."
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{envirolipids: Complete Workflow Tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+Each step of the workflow is a separate function that returns an object.
+`print()` shows the results as a table and `autoplot()` plots them.
+
+```{r}
+library(envirolipids)
+```
+
+# Describe the data
+
+Data need one column per brGDGT compound (`fIa`, `fIb`, `fIc`, `fIIa`, `fIIa_`,
+`fIIb`, `fIIb_`, `fIIc`, `fIIc_`, `fIIIa`, `fIIIa_`, `fIIIb`, `fIIIb_`,
+`fIIIc`, `fIIIc_`), as fractions (summing to 1) or percentages (summing to 100),
+plus optionally a sample `ID` column. The example data come from a sediment
+core with ages.
+
+```{r}
+data(example_data)
+head(example_data)
+```
+
+A quick summary of the composition, by compound and by methylation group:
+
+```{r}
+brgdgt_cols <- c("fIa", "fIb", "fIc", "fIIa", "fIIa_", "fIIb", "fIIb_",
+                 "fIIc", "fIIc_", "fIIIa", "fIIIa_", "fIIIb", "fIIIb_",
+                 "fIIIc", "fIIIc_")
+round(sapply(example_data[, brgdgt_cols], range), 3)
+
+methylation <- brgdgt_methylation(example_data)
+summary(methylation[, c("tetra", "penta", "hexa")])
+```
+
+# Check applicability
+
+Before predicting NPP, check whether the samples fall within the brGDGT
+composition space of the training data.
+
+```{r}
+check <- npp_brgdgt_applicable(example_data, threshold = 0.95, n_neighbors = 5)
+check
+```
+
+The per-sample table is available with `as.data.frame(check)`, and the
+nearest training samples for each sample with `check$neighbours`.
+
+```{r, fig.cap = "Mahalanobis distances to the training data"}
+autoplot(check, type = "mahalanobis")
+```
+
+```{r, fig.cap = "PCA of samples vs training data"}
+autoplot(check, type = "pca")
+```
+
+```{r, fig.cap = "Methylation groups (training data sized by NPP)"}
+autoplot(check, type = "ternary")
+```
+
+```{r, fig.cap = "Training sites with most similar brGDGT composition", eval = requireNamespace("maps", quietly = TRUE)}
+autoplot(check, type = "map")
+```
+
+# Predict NPP from brGDGTs
+
+```{r}
+npp <- npp_brgdgt(example_data, sample_type = "Lacustrine Sediment")
+head(npp)
+```
+
+```{r, fig.cap = "brGDGT-based NPP through time"}
+autoplot(npp, x = example_data$Age, xlab = "Age (years BP)")
+```
+
+`temp_brgdgt()` predicts mean annual temperature with the same interface,
+once the temperature model is available.
+
+# Potential NPP from climate
+
+When mean annual temperature and precipitation are available (here simulated),
+potential NPP can be estimated with the Miami model or the Thornthwaite
+Memorial model.
+
+```{r}
+set.seed(123)
+mat <- seq(10, 15, length.out = 50) + rnorm(50, 0, 1)
+map <- seq(400, 700, length.out = 50) + rnorm(50, 0, 100)
+
+miami <- npp_miami(mat, map, id = example_data$ID)
+head(miami)
+
+thornthwaite <- npp_thornthwaite(mat, map, id = example_data$ID)
+head(thornthwaite)
+```
+
+```{r, fig.cap = "Potential NPP from the Miami model"}
+autoplot(miami, x = example_data$Age, xlab = "Age (years BP)")
+```
+
+# NPP deficit (HANPP)
+
+The difference between climate-based and brGDGT-based NPP shows where NPP
+departs from climatic expectations, e.g. through human appropriation of NPP.
+
+```{r}
+deficit <- hanpp(npp_empirical = npp, npp_model = miami)
+head(deficit)
+```
+
+```{r, fig.cap = "Comparison of NPP estimates"}
+autoplot(deficit, x = example_data$Age, xlab = "Age (years BP)")
+```
+
+# Session information
+
+```{r}
+sessionInfo()
+```
