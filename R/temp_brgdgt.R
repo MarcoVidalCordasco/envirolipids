@@ -22,6 +22,11 @@
 #' }
 temp_brgdgt <- function(data, sample_type, ci = TRUE, id_col = "ID",
                         model = load_temp_model()) {
+  # Same pipeline as npp_brgdgt(), with the temperature model. The default
+  # `model` is only evaluated when it is first used, so until the temperature
+  # model ships, supplying `model` avoids load_temp_model()'s error.
+  # The units use the escape u00b0 for the degree sign (written with a
+  # backslash below), keeping the R code ASCII as CRAN requires.
   predict_rf_brgdgt(data, sample_type, model = model, ci = ci,
                     id_col = id_col, response = "MAT",
                     units = "\u00b0C")

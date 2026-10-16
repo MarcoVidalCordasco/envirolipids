@@ -34,6 +34,9 @@
 #' }
 npp_brgdgt <- function(data, sample_type, ci = TRUE, id_col = "ID",
                        model = load_npp_model()) {
+  # All the work is shared with temp_brgdgt(); only the model and the labels
+  # attached to the output differ. The default `model` is only loaded if it is
+  # used (lazy evaluation), so passing a model avoids reading the file.
   predict_rf_brgdgt(data, sample_type, model = model, ci = ci,
                     id_col = id_col, response = "NPP",
                     units = "gC m-2 yr-1")

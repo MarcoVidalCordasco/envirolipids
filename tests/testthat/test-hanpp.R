@@ -1,4 +1,7 @@
+# Tests for hanpp(), which accepts either plain vectors or package objects
+
 test_that("hanpp works with numeric vectors", {
+  # deficit = model - empirical: 300 - 100 and 150 - 200
   h <- hanpp(c(100, 200), c(300, 150))
   expect_s3_class(h, "hanpp")
   expect_equal(h$hanpp, c(200, -50))
@@ -13,6 +16,7 @@ test_that("hanpp works with model objects and propagates intervals", {
   h <- hanpp(npp, climate)
   expect_equal(h$id, example_data$ID)
   expect_equal(h$hanpp, climate$npp - npp$estimate)
+  # the bounds swap: the upper empirical bound gives the lower deficit
   expect_equal(h$hanpp_lower, climate$npp - npp$upper)
   expect_equal(h$hanpp_upper, climate$npp - npp$lower)
   expect_equal(attr(h, "model"), "Miami")
@@ -23,6 +27,8 @@ test_that("hanpp works with model objects and propagates intervals", {
 test_that("hanpp rejects mismatched or wrong inputs", {
   expect_error(hanpp(1:3, 1:2), "same number of samples")
   expect_error(hanpp("a", 1), "must be a numeric vector")
+  # a temperature prediction must not be accepted as empirical NPP (the NPP
+  # model is borrowed only to create a MAT-labelled object)
   mat <- temp_brgdgt(example_data, "Soil", model = load_npp_model())
   expect_error(hanpp(mat, seq_len(nrow(example_data))), "not NPP")
 })

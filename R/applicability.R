@@ -50,15 +50,26 @@ npp_brgdgt_applicable <- function(data, threshold = 0.95, use_pca = TRUE,
                                   n_neighbors = 5, id_col = "ID") {
   reference <- load_reference_data()
   ids <- get_ids(data, id_col)
+  # Put new and training samples in the same CLR space as the models. They are
+  # held as matrices, since the distance computations are matrix algebra.
   fractions <- brgdgt_fractions(data)
   clr_new <- as.matrix(brgdgt_clr(fractions))
   clr_ref <- as.matrix(reference$clr_values[, BRGDGT_COLS])
   n_new <- nrow(clr_new)
 
-  # Euclidean distances in CLR space, new samples x training samples
+  # --- Nearest training samples ---------------------------------------------
+  # Euclidean distances in CLR space, new samples x training samples. Rather
+  # than looping over pairs, use |a - b|^2 = |a|^2 + |b|^2 - 2 a.b for all
+  # pairs at once: outer() adds every |a|^2 to every |b|^2, and tcrossprod()
+  # gives every dot product a.b. Rounding can push values that should be 0
+  # slightly negative, so pmax() clips them before the square root.
   dists <- sqrt(pmax(outer(rowSums(clr_new^2), rowSums(clr_ref^2), "+") -
                        2 * tcrossprod(clr_new, clr_ref), 0))
+  # cannot ask for more neighbours than there are training samples
   n_neighbors <- min(n_neighbors, ncol(dists))
+  # For each new sample, the n closest training samples (nearest first), with
+  # where they come from and their NPP. This feeds the similarity map and lets
+  # users inspect what their samples resemble.
   neighbours <- do.call(rbind, lapply(seq_len(n_new), function(i) {
     nn <- order(dists[i, ])[seq_len(n_neighbors)]
     data.frame(id = ids[i], rank = seq_len(n_neighbors), ref_index = nn,
@@ -68,35 +79,58 @@ npp_brgdgt_applicable <- function(data, threshold = 0.95, use_pca = TRUE,
                npp = reference$npp[nn])
   }))
 
-  # PCA fitted on the training data, with new samples projected onto it
+  # --- Mahalanobis distance to the training data ----------------------------
+  # Mahalanobis distance measures how far a sample is from the centre of the
+  # training data, allowing for the spread and correlation of the compounds.
+  # The CLR covariance matrix is singular (each CLR row sums to zero), so it
+  # cannot be inverted directly. By default we work instead on the principal
+  # components that carry 95% of the variance.
+  #
+  # The PCA is fitted on the training data only, and new samples are projected
+  # onto it with predict(), so the reference space is fixed: a sample's result
+  # does not depend on which other samples are checked alongside it.
   pca <- stats::prcomp(clr_ref, center = TRUE, scale. = TRUE)
   var_explained <- pca$sdev^2 / sum(pca$sdev^2)
   scores_ref <- pca$x
   scores_new <- stats::predict(pca, newdata = clr_new)
 
   if (use_pca) {
+    # smallest number of components explaining at least 95% of the variance
     n_pcs <- min(which(cumsum(var_explained) >= 0.95))
     space_ref <- scores_ref[, seq_len(n_pcs), drop = FALSE]
     space_new <- scores_new[, seq_len(n_pcs), drop = FALSE]
     method <- "pca"
   } else {
+    # use the full CLR space; the ridge added below makes the covariance
+    # invertible
     n_pcs <- ncol(clr_ref)
     space_ref <- clr_ref
     space_new <- clr_new
     method <- "regularized"
   }
+  # The small ridge on the diagonal guards against (near-)singular covariance
+  # matrices. In PCA space it has negligible effect; in CLR space it is what
+  # makes the matrix invertible.
   cov_matrix <- stats::cov(space_ref) + diag(1e-6, n_pcs)
+  # stats::mahalanobis() returns the *squared* distance. For multivariate
+  # normal data this follows a chi-squared distribution with one degree of
+  # freedom per dimension, which gives the cut-off and the p-values below.
   mahal <- stats::mahalanobis(space_new, colMeans(space_ref), cov_matrix)
   threshold_value <- stats::qchisq(threshold, df = n_pcs)
 
   samples <- data.frame(
     id = ids,
     mahalanobis = unname(mahal),
+    # probability of a training-like sample being at least this far out;
+    # small values flag unusual compositions
     p_value = stats::pchisq(mahal, df = n_pcs, lower.tail = FALSE),
     within_domain = unname(mahal <= threshold_value),
     nn_distance = apply(dists, 1, min)
   )
 
+  # Everything the print and autoplot methods need is computed here and
+  # stored in the object, so that the methods only draw and never recompute.
+  # Only PC1 and PC2 are kept, since they are all the PCA plot shows.
   structure(
     list(
       samples = samples,
@@ -126,6 +160,7 @@ print.brgdgt_applicability <- function(x, ...) {
       " quantile)\n",
       "Samples within domain: ", sum(s$within_domain), " of ", nrow(s),
       " (", round(mean(s$within_domain) * 100, 1), "%)\n\n", sep = "")
+  # round for display only; the stored values keep full precision
   out <- s
   out$mahalanobis <- round(out$mahalanobis, 2)
   out$p_value <- format.pval(out$p_value, digits = 3)
@@ -134,6 +169,7 @@ print.brgdgt_applicability <- function(x, ...) {
   invisible(x)
 }
 
+# The per-sample table is what most users will want to keep or export
 #' @export
 as.data.frame.brgdgt_applicability <- function(x, ...) {
   x$samples
