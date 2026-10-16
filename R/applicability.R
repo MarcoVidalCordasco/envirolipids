@@ -5,8 +5,10 @@
 #'   flag samples whose predictions may be unreliable. Compositions are
 #'   CLR-transformed, and for each sample this computes:
 #'   * the Mahalanobis distance to the training data (on the principal
-#'     components explaining 95% of variance if `use_pca = TRUE`, otherwise
-#'     on a regularised CLR covariance), with a chi-squared p-value;
+#'     components of the training data explaining 95% of its variance if
+#'     `use_pca = TRUE`, otherwise on a regularised CLR covariance), with a
+#'     chi-squared p-value. New samples are projected onto the training PCA,
+#'     so each sample's result does not depend on the others in `data`;
 #'   * the Euclidean distances to its nearest training samples.
 #'
 #'   Use `print()` for a table of results and [ggplot2::autoplot()] for
@@ -66,15 +68,16 @@ npp_brgdgt_applicable <- function(data, threshold = 0.95, use_pca = TRUE,
                npp = reference$npp[nn])
   }))
 
-  # PCA of training and new samples together
-  pca <- stats::prcomp(rbind(clr_ref, clr_new), center = TRUE, scale. = TRUE)
+  # PCA fitted on the training data, with new samples projected onto it
+  pca <- stats::prcomp(clr_ref, center = TRUE, scale. = TRUE)
   var_explained <- pca$sdev^2 / sum(pca$sdev^2)
-  is_ref <- seq_len(nrow(pca$x)) <= nrow(clr_ref)
+  scores_ref <- pca$x
+  scores_new <- stats::predict(pca, newdata = clr_new)
 
   if (use_pca) {
     n_pcs <- min(which(cumsum(var_explained) >= 0.95))
-    space_ref <- pca$x[is_ref, seq_len(n_pcs), drop = FALSE]
-    space_new <- pca$x[!is_ref, seq_len(n_pcs), drop = FALSE]
+    space_ref <- scores_ref[, seq_len(n_pcs), drop = FALSE]
+    space_new <- scores_new[, seq_len(n_pcs), drop = FALSE]
     method <- "pca"
   } else {
     n_pcs <- ncol(clr_ref)
@@ -102,8 +105,8 @@ npp_brgdgt_applicable <- function(data, threshold = 0.95, use_pca = TRUE,
       threshold_value = threshold_value,
       method = method,
       n_pcs = n_pcs,
-      pca = list(ref = pca$x[is_ref, 1:2, drop = FALSE],
-                 new = pca$x[!is_ref, 1:2, drop = FALSE],
+      pca = list(ref = scores_ref[, 1:2, drop = FALSE],
+                 new = scores_new[, 1:2, drop = FALSE],
                  var_explained = var_explained[1:2]),
       methylation = list(ref = methylation_groups(reference$fractions),
                          new = methylation_groups(fractions)),

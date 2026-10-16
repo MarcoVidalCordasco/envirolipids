@@ -24,11 +24,11 @@ test_that("regularized method works", {
   expect_equal(reg$n_pcs, length(BRGDGT_COLS))
 })
 
-test_that("a single sample works", {
+test_that("results for a sample do not depend on the rest of the batch", {
   one <- npp_brgdgt_applicable(example_data[1, ])
   expect_equal(nrow(one$samples), 1)
-  expect_equal(one$samples$mahalanobis, check$samples$mahalanobis[1],
-               tolerance = 0.1)
+  expect_equal(one$samples, check$samples[1, ], ignore_attr = TRUE)
+  expect_equal(one$n_pcs, check$n_pcs)
 })
 
 test_that("print and autoplot work", {

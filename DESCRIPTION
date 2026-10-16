@@ -24,7 +24,7 @@ Depends: R (>= 3.5.0)
 Imports: ggplot2 (>= 3.4.0), randomForest, stats
 Suggests: knitr, maps, rmarkdown, testthat (>= 3.0.0)
 VignetteBuilder: knitr
-License: MIT
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Config/testthat/edition: 3

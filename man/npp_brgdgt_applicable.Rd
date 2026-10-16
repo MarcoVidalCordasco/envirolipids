@@ -53,8 +53,10 @@ Assesses whether new brGDGT samples fall within the
   flag samples whose predictions may be unreliable. Compositions are
   CLR-transformed, and for each sample this computes:
   * the Mahalanobis distance to the training data (on the principal
-    components explaining 95% of variance if `use_pca = TRUE`, otherwise
-    on a regularised CLR covariance), with a chi-squared p-value;
+    components of the training data explaining 95% of its variance if
+    `use_pca = TRUE`, otherwise on a regularised CLR covariance), with a
+    chi-squared p-value. New samples are projected onto the training PCA,
+    so each sample's result does not depend on the others in `data`;
   * the Euclidean distances to its nearest training samples.
 
   Use `print()` for a table of results and [ggplot2::autoplot()] for
