@@ -23,25 +23,24 @@ One of "Lacustrine Sediment", "Lacustrine SPM", "Low DO Lacustrine SPM",
 "Peat", "Riverine Sediment and SPM", "Soil" or
 "Lacustrine Meso/Microcosm".}
 
-\item{ci}{Logical; if `TRUE` (default), adds the 2.5% and 97.5% quantiles
+\item{ci}{Logical; if \code{TRUE} (default), adds the 2.5\% and 97.5\% quantiles
 of the predictions across trees.}
 
 \item{id_col}{Name of the column holding sample identifiers. If absent,
 samples are numbered by row.}
 
-\item{model}{The fitted model; defaults to [load_npp_model()].}
+\item{model}{The fitted model; defaults to \code{\link[=load_npp_model]{load_npp_model()}}.}
 }
 \value{
-A `brgdgt_prediction` data frame with columns `id`, `sample_type`,
-  `estimate` and, if `ci = TRUE`, `lower` and `upper`. NPP is in
-  gC m-2 yr-1. Use [ggplot2::autoplot()] to plot it and [hanpp()] to compare
-  it with climate-based NPP.
+A \code{brgdgt_prediction} data frame with columns \code{id}, \code{sample_type},
+\code{estimate} and, if \code{ci = TRUE}, \code{lower} and \code{upper}. NPP is in
+gC m-2 yr-1. Use \code{\link[ggplot2:autoplot]{ggplot2::autoplot()}} to plot it.
 }
 \description{
 Predicts Net Primary Productivity (NPP) from the fractional
-  abundances of 15 brGDGTs, using a centred log-ratio (CLR) transformation
-  and a pre-trained random forest model. Check first whether your samples
-  fall within the training data with [npp_brgdgt_applicable()].
+abundances of 15 brGDGTs, using a centred log-ratio (CLR) transformation
+and a pre-trained random forest model. Check first whether your samples
+fall within the training data with \code{\link[=npp_brgdgt_applicable]{npp_brgdgt_applicable()}}.
 }
 \examples{
 \dontrun{

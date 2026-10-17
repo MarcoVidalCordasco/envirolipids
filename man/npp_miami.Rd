@@ -5,34 +5,41 @@
 \alias{npp_thornthwaite}
 \title{Predict potential NPP from climate}
 \usage{
-npp_miami(mat, map, id = NULL)
+npp_miami(mat, map, id = NULL, units = c("carbon", "dry_matter"))
 
-npp_thornthwaite(mat, map, id = NULL)
+npp_thornthwaite(mat, map, id = NULL, units = c("carbon", "dry_matter"))
 }
 \arguments{
 \item{mat}{Mean annual temperature (degrees C).}
 
 \item{map}{Total annual precipitation (mm per year), as a long-term average
-of yearly totals; not mean monthly precipitation. Same length as `mat`.}
+of yearly totals; not mean monthly precipitation. Same length as \code{mat}.}
 
-\item{id}{Optional sample identifiers; defaults to `seq_along(mat)`.}
+\item{id}{Optional sample identifiers; defaults to \code{seq_along(mat)}.}
+
+\item{units}{Units of the returned NPP. \code{"carbon"} (the default) gives
+grams of carbon (gC m-2 yr-1), the same units as \code{\link[=npp_brgdgt]{npp_brgdgt()}}, so that
+the two can be compared. \code{"dry_matter"} gives grams of dry matter
+(g m-2 yr-1), the units of Lieth's original models. Carbon is taken to
+be 45\% of dry matter.}
 }
 \value{
-An `npp_climate` data frame with columns `id`, `mat`, `map`, `npp`
-  (gC m-2 yr-1) and model-specific columns: `npp_t`, `npp_p` and
-  `limiting` for the Miami model, `aet` for the Thornthwaite model.
+An \code{npp_climate} data frame with columns \code{id}, \code{mat}, \code{map}, \code{npp}
+and model-specific columns: \code{npp_t}, \code{npp_p} and \code{limiting} for the Miami
+model, \code{aet} for the Thornthwaite model. All NPP columns are in the
+requested \code{units}.
 }
 \description{
 Predicts potential Net Primary Productivity (NPP) from mean
-  annual temperature and total annual precipitation.
+annual temperature and total annual precipitation.
 
-  `npp_miami()` uses the Miami model (Lieth 1975): NPP is the lower of a
-  temperature-limited and a precipitation-limited estimate.
+\code{npp_miami()} uses the Miami model (Lieth 1975): NPP is the lower of a
+temperature-limited and a precipitation-limited estimate.
 
-  `npp_thornthwaite()` uses the Thornthwaite Memorial model (Lieth 1972),
-  which predicts NPP from actual evapotranspiration (AET), here estimated
-  from temperature and precipitation with Turc's formula. NPP is set to 0
-  where AET is below 20 mm.
+\code{npp_thornthwaite()} uses the Thornthwaite Memorial model (Lieth 1972),
+which predicts NPP from actual evapotranspiration (AET), here estimated
+from temperature and precipitation with Turc's formula. NPP is set to 0
+where AET is below 20 mm.
 }
 \examples{
 npp_miami(mat = c(5, 10, 20), map = c(400, 800, 1500))
@@ -40,9 +47,9 @@ npp_thornthwaite(mat = c(5, 10, 20), map = c(400, 800, 1500))
 }
 \references{
 Lieth, H. (1975) Modeling the primary productivity of the
-  world. In: Primary Productivity of the Biosphere, 237-263.
-  doi:10.1007/978-3-642-80913-2_12
+world. In: Primary Productivity of the Biosphere, 237-263.
+doi:10.1007/978-3-642-80913-2_12
 
-  Lieth, H. & Box, E. (1972) Evapotranspiration and primary productivity:
-  C.W. Thornthwaite memorial model. Publications in Climatology 25, 37-46.
+Lieth, H. & Box, E. (1972) Evapotranspiration and primary productivity:
+C.W. Thornthwaite memorial model. Publications in Climatology 25, 37-46.
 }

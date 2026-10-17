@@ -10,12 +10,12 @@ load_npp_model()
 load_temp_model()
 }
 \value{
-A `train` object (caret) wrapping a `randomForest` model.
+A \code{train} object (caret) wrapping a \code{randomForest} model.
 }
 \description{
-`load_npp_model()` loads the random forest used by
-  [npp_brgdgt()], trained on a global compilation of brGDGT data.
-  `load_temp_model()` loads the model used by [temp_brgdgt()].
+\code{load_npp_model()} loads the random forest used by
+\code{\link[=npp_brgdgt]{npp_brgdgt()}}, trained on a global compilation of brGDGT data.
+\code{load_temp_model()} loads the model used by \code{\link[=temp_brgdgt]{temp_brgdgt()}}.
 }
 \examples{
 \dontrun{

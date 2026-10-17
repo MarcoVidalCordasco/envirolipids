@@ -3,27 +3,28 @@
 \docType{data}
 \name{example_data}
 \alias{example_data}
-\title{Example brGDGT dataset from natural archives}
+\title{Example paleo brGDGT dataset from a sediment core}
 \format{
-A data frame with 50 rows and 17 variables (sample ID, 15 brGDGTs and Age):
+A data frame with 50 rows and 17 variables (sample ID, 15 brGDGTs
+and Age):
 \describe{
-  \item{ID}{Sample identifier (numeric)}
-  \item{fIIIa}{brGDGT IIIa fractional abundance}
-  \item{fIIIa_}{brGDGT IIIa' fractional abundance}
-  \item{fIIIb}{brGDGT IIIb fractional abundance}
-  \item{fIIIb_}{brGDGT IIIb' fractional abundance}
-  \item{fIIIc}{brGDGT IIIc fractional abundance}
-  \item{fIIIc_}{brGDGT IIIc' fractional abundance}
-  \item{fIIa}{brGDGT IIa fractional abundance}
-  \item{fIIa_}{brGDGT IIa' fractional abundance}
-  \item{fIIb}{brGDGT IIb fractional abundance}
-  \item{fIIb_}{brGDGT IIb' fractional abundance}
-  \item{fIIc}{brGDGT IIc fractional abundance}
-  \item{fIIc_}{brGDGT IIc' fractional abundance}
-  \item{fIa}{brGDGT Ia fractional abundance}
-  \item{fIb}{brGDGT Ib fractional abundance}
-  \item{fIc}{brGDGT Ic fractional abundance}
-  \item{Age}{Sample age (years BP)}
+\item{ID}{Sample identifier (numeric)}
+\item{fIIIa}{brGDGT IIIa fractional abundance}
+\item{fIIIa_}{brGDGT IIIa' fractional abundance}
+\item{fIIIb}{brGDGT IIIb fractional abundance}
+\item{fIIIb_}{brGDGT IIIb' fractional abundance}
+\item{fIIIc}{brGDGT IIIc fractional abundance}
+\item{fIIIc_}{brGDGT IIIc' fractional abundance}
+\item{fIIa}{brGDGT IIa fractional abundance}
+\item{fIIa_}{brGDGT IIa' fractional abundance}
+\item{fIIb}{brGDGT IIb fractional abundance}
+\item{fIIb_}{brGDGT IIb' fractional abundance}
+\item{fIIc}{brGDGT IIc fractional abundance}
+\item{fIIc_}{brGDGT IIc' fractional abundance}
+\item{fIa}{brGDGT Ia fractional abundance}
+\item{fIb}{brGDGT Ib fractional abundance}
+\item{fIc}{brGDGT Ic fractional abundance}
+\item{Age}{Sample age (years BP)}
 }
 }
 \source{
@@ -34,12 +35,13 @@ example_data
 }
 \description{
 A dataset containing brGDGT measurements from 50 natural archive samples
-to demonstrate the package functionality. The data includes fractional
+to demonstrate the package functionality on paleo data. See
+\link{modern_example_data} for modern samples. The data includes fractional
 abundances of 15 brGDGT compounds and sample ages (years BP).
 }
 \details{
-The dataset contains 50 samples from a sediment core. All brGDGT abundances are
-expressed as fractions (summing to 1 per sample).
+The dataset contains 50 samples from a sediment core. All brGDGT abundances
+are expressed as fractions (summing to 1 per sample).
 }
 \examples{
 \dontrun{

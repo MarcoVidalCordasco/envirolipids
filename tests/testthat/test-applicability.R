@@ -15,6 +15,18 @@ test_that("npp_brgdgt_applicable returns per-sample diagnostics", {
   expect_equal(check$method, "pca")
 })
 
+test_that("the cut-off keeps the requested share of training samples", {
+  # Training samples are, by definition, in the domain: with the empirical
+  # cut-off, the proportion of them inside it matches `threshold`
+  reference <- load_reference_data()
+  ref_data <- reference$fractions
+  ref_data$ID <- seq_len(nrow(ref_data))
+  ref_check <- npp_brgdgt_applicable(ref_data, threshold = 0.9)
+  expect_equal(mean(ref_check$samples$within_domain), 0.9, tolerance = 0.01)
+  # a sample on the cut-off has 10% of training samples at least as far out
+  expect_equal(mean(ref_check$samples$p_value <= 0.1), 0.1, tolerance = 0.01)
+})
+
 test_that("neighbours are sorted and consistent with nn_distance", {
   # 3 neighbours per sample, the first of which is the nearest overall
   nb <- check$neighbours
@@ -46,6 +58,9 @@ test_that("print and autoplot work", {
   for (type in c("mahalanobis", "pca", "ternary")) {
     expect_s3_class(autoplot(check, type = type), "ggplot")
   }
+  # the Mahalanobis plot can also be drawn against a numeric x, such as age
+  p <- autoplot(check, type = "mahalanobis", x = example_data$Age)
+  expect_true(is.numeric(p$data$x))
   # the map needs the suggested maps package
   skip_if_not_installed("maps")
   expect_s3_class(autoplot(check, type = "map"), "ggplot")

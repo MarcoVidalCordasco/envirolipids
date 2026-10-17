@@ -6,7 +6,7 @@
 \usage{
 npp_brgdgt_applicable(
   data,
-  threshold = 0.95,
+  threshold = 0.99,
   use_pca = TRUE,
   n_neighbors = 5,
   id_col = "ID"
@@ -18,10 +18,11 @@ fIIa_, fIIb, fIIb_, fIIc, fIIc_, fIIIa, fIIIa_, fIIIb, fIIIb_, fIIIc,
 fIIIc_), given either as fractions (summing to 1) or percentages
 (summing to 100). Columns are matched by name.}
 
-\item{threshold}{Quantile of the chi-squared distribution used as the
-Mahalanobis distance cut-off for being within the domain (default 0.95).}
+\item{threshold}{Proportion of the training samples that fall within the
+domain: the Mahalanobis distance cut-off is this quantile of the training
+samples' distances (default 0.99).}
 
-\item{use_pca}{Logical; if `TRUE` (default), computes Mahalanobis distances
+\item{use_pca}{Logical; if \code{TRUE} (default), computes Mahalanobis distances
 on principal components to avoid a singular covariance matrix.}
 
 \item{n_neighbors}{Number of nearest training samples to find for each
@@ -31,36 +32,48 @@ sample (default 5).}
 samples are numbered by row.}
 }
 \value{
-A `brgdgt_applicability` object, a list with elements:
-  \item{samples}{Data frame with, for each sample, `id`, `mahalanobis`,
-    `p_value`, `within_domain` and `nn_distance` (distance to the nearest
-    training sample).}
-  \item{neighbours}{Data frame of nearest training samples for each sample:
-    `id`, `rank`, `ref_index`, `distance`, `site`, `longitude`,
-    `latitude`, `npp`.}
-  \item{threshold_value}{Mahalanobis distance cut-off.}
-  \item{method}{`"pca"` or `"regularized"`.}
-  \item{n_pcs}{Degrees of freedom (number of PCs or CLR components).}
-  \item{pca}{PC1 and PC2 scores of the training (`ref`) and new (`new`)
-    samples, and the proportion of variance each explains (`var_explained`).}
-  \item{methylation}{Methylation group proportions of the training (`ref`)
-    and new (`new`) samples, see [brgdgt_methylation()].}
-  \item{reference}{Training data NPP, sites and coordinates.}
+A \code{brgdgt_applicability} object, a list with elements:
+\item{samples}{Data frame with, for each sample, \code{id}, \code{mahalanobis},
+\code{p_value} (the proportion of training samples at least as far from the
+centre of the training data), \code{within_domain} and \code{nn_distance}
+(distance to the nearest training sample).}
+\item{neighbours}{Data frame of nearest training samples for each sample:
+\code{id}, \code{rank}, \code{ref_index}, \code{distance}, \code{site}, \code{longitude},
+\code{latitude}, \code{npp}.}
+\item{threshold_value}{Mahalanobis distance cut-off.}
+\item{method}{\code{"pca"} or \code{"regularized"}.}
+\item{n_pcs}{Degrees of freedom (number of PCs or CLR components).}
+\item{pca}{PC1 and PC2 scores of the training (\code{ref}) and new (\code{new})
+samples, and the proportion of variance each explains (\code{var_explained}).}
+\item{methylation}{Methylation group proportions of the training (\code{ref})
+and new (\code{new}) samples, see \code{\link[=brgdgt_methylation]{brgdgt_methylation()}}.}
+\item{reference}{Training data NPP, sites and coordinates.}
 }
 \description{
 Assesses whether new brGDGT samples fall within the
-  composition space of the data used to train the NPP model, which helps
-  flag samples whose predictions may be unreliable. Compositions are
-  CLR-transformed, and for each sample this computes:
-  * the Mahalanobis distance to the training data (on the principal
-    components of the training data explaining 95% of its variance if
-    `use_pca = TRUE`, otherwise on a regularised CLR covariance), with a
-    chi-squared p-value. New samples are projected onto the training PCA,
-    so each sample's result does not depend on the others in `data`;
-  * the Euclidean distances to its nearest training samples.
+composition space of the data used to train the NPP model, which helps
+flag samples whose predictions may be unreliable. Compositions are
+CLR-transformed, and for each sample this computes:
+\itemize{
+\item the Mahalanobis distance to the training data (on the principal
+components of the training data explaining 95\% of its variance if
+\code{use_pca = TRUE}, otherwise on a regularised CLR covariance). New
+samples are projected onto the training PCA, so each sample's result
+does not depend on the others in \code{data};
+\item the Euclidean distances to its nearest training samples.
+}
 
-  Use `print()` for a table of results and [ggplot2::autoplot()] for
-  diagnostic plots.
+Use \code{print()} for a table of results and \code{\link[ggplot2:autoplot]{ggplot2::autoplot()}} for
+diagnostic plots.
+
+A sample is within the domain if its Mahalanobis distance is no larger
+than that of a given proportion (\code{threshold}) of the training samples.
+The cut-off is taken from the training samples' own distances rather
+than from a chi-squared distribution: the chi-squared assumes
+multivariate normal data, but brGDGT compositions are heavy-tailed, so it
+would flag a large share of the training data itself as out of domain.
+With the default \code{threshold = 0.99}, only the most extreme 1\% of training
+samples lie beyond the cut-off.
 }
 \examples{
 \dontrun{

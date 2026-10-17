@@ -6,17 +6,27 @@
 #'   CLR-transformed, and for each sample this computes:
 #'   * the Mahalanobis distance to the training data (on the principal
 #'     components of the training data explaining 95% of its variance if
-#'     `use_pca = TRUE`, otherwise on a regularised CLR covariance), with a
-#'     chi-squared p-value. New samples are projected onto the training PCA,
-#'     so each sample's result does not depend on the others in `data`;
+#'     `use_pca = TRUE`, otherwise on a regularised CLR covariance). New
+#'     samples are projected onto the training PCA, so each sample's result
+#'     does not depend on the others in `data`;
 #'   * the Euclidean distances to its nearest training samples.
 #'
 #'   Use `print()` for a table of results and [ggplot2::autoplot()] for
 #'   diagnostic plots.
 #'
+#'   A sample is within the domain if its Mahalanobis distance is no larger
+#'   than that of a given proportion (`threshold`) of the training samples.
+#'   The cut-off is taken from the training samples' own distances rather
+#'   than from a chi-squared distribution: the chi-squared assumes
+#'   multivariate normal data, but brGDGT compositions are heavy-tailed, so it
+#'   would flag a large share of the training data itself as out of domain.
+#'   With the default `threshold = 0.99`, only the most extreme 1% of training
+#'   samples lie beyond the cut-off.
+#'
 #' @inheritParams npp_brgdgt
-#' @param threshold Quantile of the chi-squared distribution used as the
-#'   Mahalanobis distance cut-off for being within the domain (default 0.95).
+#' @param threshold Proportion of the training samples that fall within the
+#'   domain: the Mahalanobis distance cut-off is this quantile of the training
+#'   samples' distances (default 0.99).
 #' @param use_pca Logical; if `TRUE` (default), computes Mahalanobis distances
 #'   on principal components to avoid a singular covariance matrix.
 #' @param n_neighbors Number of nearest training samples to find for each
@@ -24,8 +34,9 @@
 #'
 #' @return A `brgdgt_applicability` object, a list with elements:
 #'   \item{samples}{Data frame with, for each sample, `id`, `mahalanobis`,
-#'     `p_value`, `within_domain` and `nn_distance` (distance to the nearest
-#'     training sample).}
+#'     `p_value` (the proportion of training samples at least as far from the
+#'     centre of the training data), `within_domain` and `nn_distance`
+#'     (distance to the nearest training sample).}
 #'   \item{neighbours}{Data frame of nearest training samples for each sample:
 #'     `id`, `rank`, `ref_index`, `distance`, `site`, `longitude`,
 #'     `latitude`, `npp`.}
@@ -46,7 +57,7 @@
 #' check
 #' ggplot2::autoplot(check, type = "pca")
 #' }
-npp_brgdgt_applicable <- function(data, threshold = 0.95, use_pca = TRUE,
+npp_brgdgt_applicable <- function(data, threshold = 0.99, use_pca = TRUE,
                                   n_neighbors = 5, id_col = "ID") {
   reference <- load_reference_data()
   ids <- get_ids(data, id_col)
@@ -112,18 +123,24 @@ npp_brgdgt_applicable <- function(data, threshold = 0.95, use_pca = TRUE,
   # matrices. In PCA space it has negligible effect; in CLR space it is what
   # makes the matrix invertible.
   cov_matrix <- stats::cov(space_ref) + diag(1e-6, n_pcs)
-  # stats::mahalanobis() returns the *squared* distance. For multivariate
-  # normal data this follows a chi-squared distribution with one degree of
-  # freedom per dimension, which gives the cut-off and the p-values below.
+  # stats::mahalanobis() returns the *squared* distance.
   mahal <- stats::mahalanobis(space_new, colMeans(space_ref), cov_matrix)
-  threshold_value <- stats::qchisq(threshold, df = n_pcs)
+  # The cut-off and p-values come from the distances of the training samples
+  # themselves. For multivariate normal data the distances would follow a
+  # chi-squared distribution, but CLR compositions are heavy-tailed: about 14%
+  # of the training samples lie beyond the chi-squared 95% quantile, so that
+  # cut-off rejects much of the data the model was trained on. The empirical
+  # distribution makes no assumption about the shape of the data, and defines
+  # the domain directly in terms of the training samples.
+  mahal_ref <- stats::mahalanobis(space_ref, colMeans(space_ref), cov_matrix)
+  threshold_value <- unname(stats::quantile(mahal_ref, threshold))
 
   samples <- data.frame(
     id = ids,
     mahalanobis = unname(mahal),
-    # probability of a training-like sample being at least this far out;
-    # small values flag unusual compositions
-    p_value = stats::pchisq(mahal, df = n_pcs, lower.tail = FALSE),
+    # proportion of training samples at least this far out; small values
+    # flag unusual compositions
+    p_value = vapply(mahal, function(m) mean(mahal_ref >= m), numeric(1)),
     within_domain = unname(mahal <= threshold_value),
     nn_distance = apply(dists, 1, min)
   )
@@ -156,8 +173,8 @@ print.brgdgt_applicability <- function(x, ...) {
   s <- x$samples
   cat("brGDGT applicability domain check\n",
       "Mahalanobis distance (", x$method, ", df = ", x$n_pcs,
-      "), cut-off ", round(x$threshold_value, 2), " (", x$threshold,
-      " quantile)\n",
+      "), cut-off ", round(x$threshold_value, 2), " (", x$threshold * 100,
+      "% of training samples within)\n",
       "Samples within domain: ", sum(s$within_domain), " of ", nrow(s),
       " (", round(mean(s$within_domain) * 100, 1), "%)\n\n", sep = "")
   # round for display only; the stored values keep full precision

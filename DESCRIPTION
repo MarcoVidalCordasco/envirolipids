@@ -17,9 +17,8 @@ Description: A tool to predict Net Primary Productivity (NPP) from relative
     space of the training data, identifying potentially unreliable
     predictions. When mean annual temperature and total annual precipitation are
     available, the package also computes potential NPP using the Miami and
-    Thornthwaite Memorial models, allowing comparison between climate-based
-    and brGDGT-based NPP estimates to identify deviations from climatic
-    expectations.
+    Thornthwaite Memorial models, expressed by default in grams of carbon so
+    that they are comparable with the brGDGT-based estimates.
 Depends: R (>= 3.5.0)
 Imports: ggplot2 (>= 3.4.0), randomForest, stats
 Suggests: knitr, maps, rmarkdown, testthat (>= 3.0.0)
@@ -28,4 +27,5 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.1.0

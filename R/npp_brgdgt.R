@@ -21,8 +21,7 @@
 #'
 #' @return A `brgdgt_prediction` data frame with columns `id`, `sample_type`,
 #'   `estimate` and, if `ci = TRUE`, `lower` and `upper`. NPP is in
-#'   gC m-2 yr-1. Use [ggplot2::autoplot()] to plot it and [hanpp()] to compare
-#'   it with climate-based NPP.
+#'   gC m-2 yr-1. Use [ggplot2::autoplot()] to plot it.
 #' @export
 #'
 #' @examples
@@ -37,6 +36,10 @@ npp_brgdgt <- function(data, sample_type, ci = TRUE, id_col = "ID",
   # All the work is shared with temp_brgdgt(); only the model and the labels
   # attached to the output differ. The default `model` is only loaded if it is
   # used (lazy evaluation), so passing a model avoids reading the file.
+  #
+  # UNITS: like the training NPP, predictions are in grams of carbon
+  # (gC m-2 yr-1), as are the climate-based estimates from npp_miami() and
+  # npp_thornthwaite() by default.
   predict_rf_brgdgt(data, sample_type, model = model, ci = ci,
                     id_col = id_col, response = "NPP",
                     units = "gC m-2 yr-1")

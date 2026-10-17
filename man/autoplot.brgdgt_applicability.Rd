@@ -7,16 +7,24 @@
 \method{autoplot}{brgdgt_applicability}(
   object,
   type = c("mahalanobis", "pca", "ternary", "map"),
+  x = NULL,
+  xlab = NULL,
   n_sites = 10,
   ...
 )
 }
 \arguments{
-\item{object}{A `brgdgt_applicability` object.}
+\item{object}{A \code{brgdgt_applicability} object.}
 
 \item{type}{Which plot to draw.}
 
-\item{n_sites}{For `type = "map"`, number of most similar sites to show.}
+\item{x}{For \code{type = "mahalanobis"}, an optional vector with one value per
+sample to use as the x axis (e.g. age or depth). If \code{NULL} (default),
+samples are plotted by id.}
+
+\item{xlab}{For \code{type = "mahalanobis"}, label for the x axis.}
+
+\item{n_sites}{For \code{type = "map"}, number of most similar sites to show.}
 
 \item{...}{Not used.}
 }
@@ -24,12 +32,15 @@
 A ggplot object.
 }
 \description{
-Plots the results of [npp_brgdgt_applicable()]:
-  * `"mahalanobis"`: Mahalanobis distance of each sample, with the cut-off;
-  * `"pca"`: samples on the first two principal components, over the
-    training data;
-  * `"ternary"`: ternary plot of methylation groups, with training samples
-    sized by NPP;
-  * `"map"`: locations of the training sites most similar in composition
-    to the samples (requires the maps package).
+Plots the results of \code{\link[=npp_brgdgt_applicable]{npp_brgdgt_applicable()}}:
+\itemize{
+\item \code{"mahalanobis"}: Mahalanobis distance of each sample, with the cut-off,
+by sample or along a numeric \code{x} such as age;
+\item \code{"pca"}: samples on the first two principal components, over the
+training data;
+\item \code{"ternary"}: ternary plot of methylation groups, with training samples
+sized by NPP;
+\item \code{"map"}: locations of the training sites most similar in composition
+to the samples (requires the maps package).
+}
 }

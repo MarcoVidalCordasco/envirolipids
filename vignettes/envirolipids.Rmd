@@ -18,117 +18,176 @@ knitr::opts_chunk$set(
 )
 ```
 
-Each step of the workflow is a separate function that returns an object.
-`print()` shows the results as a table and `autoplot()` plots them.
+envirolipids predicts Net Primary Productivity (NPP) from brGDGTs. The workflow is the same for modern
+samples and for paleo records, but the results are presented differently:
+
+* **modern data** are a set of separate samples, plotted **by sample**;
+* **paleo data** are a sequence through time, plotted **against age**.
+
+This vignette works through one example of each. Every step is a separate
+function that returns an object: `print()` shows the results as a table and
+`autoplot()` plots them. By default `autoplot()` plots by sample. Passing a
+numeric `x` (such as age) plots a series instead.
 
 ```{r}
 library(envirolipids)
 ```
 
-# Describe the data
+# Input data
 
 Data need one column per brGDGT compound (`fIa`, `fIb`, `fIc`, `fIIa`, `fIIa_`,
 `fIIb`, `fIIb_`, `fIIc`, `fIIc_`, `fIIIa`, `fIIIa_`, `fIIIb`, `fIIIb_`,
-`fIIIc`, `fIIIc_`), as fractions (summing to 1) or percentages (summing to 100),
-plus optionally a sample `ID` column. The example data come from a sediment
-core with ages.
+`fIIIc`, `fIIIc_`), given either as fractions (summing to 1) or as percentages
+(summing to 100). Columns are matched by name, so their order does not matter.
+An `ID` column, if present, is used to label the samples. Any other columns
+are ignored.
+
+# Modern data: plotting by sample
+
+## The data
+
+`modern_example_data` contains 20 modern samples (soils, lake sediments and
+peats) from sites around the world. Abundances are given as percentages. Each
+sample also has its observed NPP.
+
+```{r}
+data(modern_example_data)
+head(modern_example_data[, c("ID", "Sampletype", "Latitude", "Longitude",
+                             "NPP")])
+```
+
+These samples are a subset of the data used to train the NPP model, so they
+also illustrate how well the model reproduces the NPP it was trained on.
+Predictions for genuinely new samples will be less accurate.
+
+## Describe the samples
+
+Summarising brGDGTs by methylation group gives a quick overview of the
+compositions:
+
+```{r}
+modern_methylation <- brgdgt_methylation(modern_example_data)
+head(modern_methylation)
+```
+
+## Check applicability
+
+Before predicting NPP, check whether the samples fall within the brGDGT
+composition space of the training data:
+
+```{r}
+modern_check <- npp_brgdgt_applicable(modern_example_data)
+modern_check
+```
+
+A sample is within the domain if it is no further from the centre of the
+training data (Mahalanobis distance) than 99% of the training samples; the
+`threshold` argument changes this proportion. The `p_value` column gives the
+proportion of training samples at least as far out as each sample.
+
+The per-sample table is available with `as.data.frame(modern_check)`, and the
+nearest training samples for each sample with `modern_check$neighbours`.
+
+```{r, fig.cap = "Mahalanobis distance of each sample to the training data"}
+autoplot(modern_check, type = "mahalanobis")
+```
+
+```{r, fig.cap = "Samples on the principal components of the training data"}
+autoplot(modern_check, type = "pca")
+```
+
+```{r, fig.cap = "Methylation groups (training data sized by NPP)"}
+autoplot(modern_check, type = "ternary")
+```
+
+```{r, fig.cap = "Training sites with the most similar brGDGT composition", eval = requireNamespace("maps", quietly = TRUE)}
+autoplot(modern_check, type = "map")
+```
+
+## Predict NPP from brGDGTs
+
+The samples are of different types, so `sample_type` is given per sample:
+
+```{r}
+modern_npp <- npp_brgdgt(modern_example_data,
+                         sample_type = modern_example_data$Sampletype)
+head(modern_npp)
+```
+
+```{r, fig.cap = "brGDGT-based NPP for each sample, with 95% intervals"}
+autoplot(modern_npp)
+```
+
+For modern samples, the predictions can be compared with observed NPP:
+
+```{r, fig.cap = "Predicted vs observed NPP; the dashed line is the 1:1 line"}
+library(ggplot2)
+ggplot(data.frame(observed = modern_example_data$NPP,
+                  predicted = modern_npp$estimate,
+                  lower = modern_npp$lower, upper = modern_npp$upper),
+       aes(x = observed, y = predicted)) +
+  geom_abline(linetype = "dashed") +
+  geom_errorbar(aes(ymin = lower, ymax = upper), colour = "grey60") +
+  geom_point() +
+  labs(x = "Observed NPP (gC m-2 yr-1)", y = "Predicted NPP (gC m-2 yr-1)") +
+  theme_minimal()
+```
+
+
+# Paleo data: plotting through time
+
+## The data
+
+`example_data` contains 50 samples from a sediment core, with ages in years
+BP. Abundances are given as fractions.
 
 ```{r}
 data(example_data)
 head(example_data)
 ```
 
-A quick summary of the composition, by compound and by methylation group:
+## Describe the samples
 
 ```{r}
-brgdgt_cols <- c("fIa", "fIb", "fIc", "fIIa", "fIIa_", "fIIb", "fIIb_",
-                 "fIIc", "fIIc_", "fIIIa", "fIIIa_", "fIIIb", "fIIIb_",
-                 "fIIIc", "fIIIc_")
-round(sapply(example_data[, brgdgt_cols], range), 3)
-
-methylation <- brgdgt_methylation(example_data)
-summary(methylation[, c("tetra", "penta", "hexa")])
+paleo_methylation <- brgdgt_methylation(example_data)
+summary(paleo_methylation[, c("tetra", "penta", "hexa")])
 ```
 
-# Check applicability
+## Check applicability
 
-Before predicting NPP, check whether the samples fall within the brGDGT
-composition space of the training data.
+The check is the same as for modern data. Plotting against age shows whether
+particular periods fall outside the training data.
 
 ```{r}
-check <- npp_brgdgt_applicable(example_data, threshold = 0.95, n_neighbors = 5)
-check
+paleo_check <- npp_brgdgt_applicable(example_data)
+paleo_check
 ```
 
-The per-sample table is available with `as.data.frame(check)`, and the
-nearest training samples for each sample with `check$neighbours`.
-
-```{r, fig.cap = "Mahalanobis distances to the training data"}
-autoplot(check, type = "mahalanobis")
+```{r, fig.cap = "Mahalanobis distance to the training data through time"}
+autoplot(paleo_check, type = "mahalanobis", x = example_data$Age,
+         xlab = "Age (years BP)")
 ```
 
-```{r, fig.cap = "PCA of samples vs training data"}
-autoplot(check, type = "pca")
+The PCA, ternary and map plots do not have a time axis, and work as for modern
+data:
+
+```{r, fig.cap = "Core samples on the principal components of the training data"}
+autoplot(paleo_check, type = "pca")
 ```
 
-```{r, fig.cap = "Methylation groups (training data sized by NPP)"}
-autoplot(check, type = "ternary")
-```
+## Predict NPP from brGDGTs
 
-```{r, fig.cap = "Training sites with most similar brGDGT composition", eval = requireNamespace("maps", quietly = TRUE)}
-autoplot(check, type = "map")
-```
-
-# Predict NPP from brGDGTs
+All samples come from lake sediments:
 
 ```{r}
-npp <- npp_brgdgt(example_data, sample_type = "Lacustrine Sediment")
-head(npp)
+paleo_npp <- npp_brgdgt(example_data, sample_type = "Lacustrine Sediment")
+head(paleo_npp)
 ```
 
-```{r, fig.cap = "brGDGT-based NPP through time"}
-autoplot(npp, x = example_data$Age, xlab = "Age (years BP)")
+```{r, fig.cap = "brGDGT-based NPP through time, with 95% interval"}
+autoplot(paleo_npp, x = example_data$Age, xlab = "Age (years BP)")
 ```
 
-`temp_brgdgt()` predicts mean annual temperature with the same interface,
-once the temperature model is available.
-
-# Potential NPP from climate
-
-When mean annual temperature and total annual precipitation are available
-(here simulated),
-potential NPP can be estimated with the Miami model or the Thornthwaite
-Memorial model.
-
-```{r}
-set.seed(123)
-mat <- seq(10, 15, length.out = 50) + rnorm(50, 0, 1)
-map <- seq(400, 700, length.out = 50) + rnorm(50, 0, 100)
-
-miami <- npp_miami(mat, map, id = example_data$ID)
-head(miami)
-
-thornthwaite <- npp_thornthwaite(mat, map, id = example_data$ID)
-head(thornthwaite)
-```
-
-```{r, fig.cap = "Potential NPP from the Miami model"}
-autoplot(miami, x = example_data$Age, xlab = "Age (years BP)")
-```
-
-# NPP deficit (HANPP)
-
-The difference between climate-based and brGDGT-based NPP shows where NPP
-departs from climatic expectations, e.g. through human appropriation of NPP.
-
-```{r}
-deficit <- hanpp(npp_empirical = npp, npp_model = miami)
-head(deficit)
-```
-
-```{r, fig.cap = "Comparison of NPP estimates"}
-autoplot(deficit, x = example_data$Age, xlab = "Age (years BP)")
-```
 
 # Session information
 

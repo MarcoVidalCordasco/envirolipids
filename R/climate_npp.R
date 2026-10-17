@@ -15,10 +15,16 @@
 #' @param map Total annual precipitation (mm per year), as a long-term average
 #'   of yearly totals; not mean monthly precipitation. Same length as `mat`.
 #' @param id Optional sample identifiers; defaults to `seq_along(mat)`.
+#' @param units Units of the returned NPP. `"carbon"` (the default) gives
+#'   grams of carbon (gC m-2 yr-1), the same units as [npp_brgdgt()], so that
+#'   the two can be compared. `"dry_matter"` gives grams of dry matter
+#'   (g m-2 yr-1), the units of Lieth's original models. Carbon is taken to
+#'   be 45% of dry matter.
 #'
 #' @return An `npp_climate` data frame with columns `id`, `mat`, `map`, `npp`
-#'   (gC m-2 yr-1) and model-specific columns: `npp_t`, `npp_p` and
-#'   `limiting` for the Miami model, `aet` for the Thornthwaite model.
+#'   and model-specific columns: `npp_t`, `npp_p` and `limiting` for the Miami
+#'   model, `aet` for the Thornthwaite model. All NPP columns are in the
+#'   requested `units`.
 #'
 #' @references Lieth, H. (1975) Modeling the primary productivity of the
 #'   world. In: Primary Productivity of the Biosphere, 237-263.
@@ -31,10 +37,16 @@
 #' @examples
 #' npp_miami(mat = c(5, 10, 20), map = c(400, 800, 1500))
 #' npp_thornthwaite(mat = c(5, 10, 20), map = c(400, 800, 1500))
-npp_miami <- function(mat, map, id = NULL) {
+npp_miami <- function(mat, map, id = NULL,
+                      units = c("carbon", "dry_matter")) {
   id <- check_climate(mat, map, id)
+  units <- match.arg(units)
+  # Lieth's models predict NPP as grams of dry matter (g m-2 yr-1); by default
+  # this is converted to grams of carbon (see dm_to_units()) to match
+  # brGDGT-based NPP.
+  #
   # Two empirical curves fitted by Lieth to global NPP data, both saturating
-  # at 3000 gC m-2 yr-1:
+  # at 3000 g m-2 yr-1:
   # a logistic (S-shaped) curve in temperature...
   npp_t <- 3000 / (1 + exp(1.315 - 0.119 * mat))
   # ...and a saturating exponential in precipitation
@@ -44,21 +56,25 @@ npp_miami <- function(mat, map, id = NULL) {
   # limiting, as that is often of interest in itself.
   out <- data.frame(
     id = id, mat = mat, map = map,
-    npp = pmin(npp_t, npp_p),
-    npp_t = npp_t,
-    npp_p = npp_p,
+    npp = dm_to_units(pmin(npp_t, npp_p), units),
+    npp_t = dm_to_units(npp_t, units),
+    npp_p = dm_to_units(npp_p, units),
     limiting = ifelse(npp_t <= npp_p, "temperature", "precipitation")
   )
-  new_npp_climate(out, "Miami")
+  new_npp_climate(out, "Miami", units)
 }
 
 #' @rdname npp_miami
 #' @export
-npp_thornthwaite <- function(mat, map, id = NULL) {
+npp_thornthwaite <- function(mat, map, id = NULL,
+                             units = c("carbon", "dry_matter")) {
   id <- check_climate(mat, map, id)
+  units <- match.arg(units)
   # Turc's formula for actual evapotranspiration (AET, mm/yr):
+  # nolint start: commented_code_linter.
   #   L = 300 + 25 T + 0.05 T^3   (evaporating power of the air, mm/yr)
   #   AET = P / sqrt(0.9 + (P / L)^2)
+  # nolint end
   # L becomes negative below about -10 C, where there is effectively no
   # evaporation, so it is floored at 0.
   evap_max <- pmax(300 + 25 * mat + 0.05 * mat^3, 0)
@@ -70,15 +86,16 @@ npp_thornthwaite <- function(mat, map, id = NULL) {
   aet <- ifelse(map <= 0.316 * evap_max,
                 map,
                 map / sqrt(0.9 + (map / evap_max)^2))
-  # Lieth's Thornthwaite Memorial curve: NPP saturates at 3000 gC m-2 yr-1 as
+  # Lieth's Thornthwaite Memorial curve: NPP saturates at 3000 g m-2 yr-1 as
   # AET increases. The curve crosses zero at AET = 20 mm and would go negative
   # below that, which is meaningless, so it is floored at 0.
   out <- data.frame(
     id = id, mat = mat, map = map,
-    npp = pmax(3000 * (1 - exp(-0.0009695 * (aet - 20))), 0),
+    npp = dm_to_units(pmax(3000 * (1 - exp(-0.0009695 * (aet - 20))), 0),
+                      units),
     aet = aet
   )
-  new_npp_climate(out, "Thornthwaite")
+  new_npp_climate(out, "Thornthwaite", units)
 }
 
 # Validate the climate inputs shared by both models, and return the ids to
@@ -97,16 +114,24 @@ check_climate <- function(mat, map, id) {
   id
 }
 
-# Constructor for the climate NPP class. The model name is kept as an
-# attribute so that print(), autoplot() and hanpp() can report it.
-new_npp_climate <- function(df, model) {
-  structure(df, class = c("npp_climate", "data.frame"), model = model)
+# Convert NPP from grams of dry matter, as given by Lieth's models, to the
+# requested units. Carbon is taken to be 45% of dry matter, a standard
+# conversion factor for plant biomass.
+dm_to_units <- function(npp, units) {
+  if (units == "carbon") npp * 0.45 else npp
+}
+
+# Constructor for the climate NPP class. The model name and the units label
+# are kept as attributes so that print() and autoplot() can report them.
+new_npp_climate <- function(df, model, units) {
+  structure(df, class = c("npp_climate", "data.frame"), model = model,
+            units = if (units == "carbon") "gC m-2 yr-1" else "g m-2 yr-1")
 }
 
 #' @export
 print.npp_climate <- function(x, ...) {
-  cat("Potential NPP (gC m-2 yr-1) from the", attr(x, "model"),
-      "model for", nrow(x), "samples\n\n")
+  cat("Potential NPP (", attr(x, "units"), ") from the ", attr(x, "model"),
+      " model for ", nrow(x), " samples\n\n", sep = "")
   print(as.data.frame(x), ...)
   invisible(x)
 }
@@ -123,10 +148,16 @@ print.npp_climate <- function(x, ...) {
 autoplot.npp_climate <- function(object, x = NULL, xlab = NULL, ...) {
   df <- as.data.frame(object)
   df$x <- plot_x(df, x)
-  if (is.null(xlab)) xlab <- if (is.null(x)) "Sample" else deparse(substitute(x))
+  if (is.null(xlab)) {
+    xlab <- if (is.null(x)) "Sample" else deparse(substitute(x))
+  }
 
-  p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$x, y = .data$npp)) +
-    ggplot2::geom_line(colour = "grey50")
+  p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$x, y = .data$npp))
+  # connect the points only for a continuous series (e.g. through time), not
+  # between separate samples
+  if (!is.factor(df$x)) {
+    p <- p + ggplot2::geom_line(colour = "grey50")
+  }
   # only the Miami model reports a limiting factor, so colour by it if present
   if ("limiting" %in% names(df)) {
     p <- p + ggplot2::geom_point(ggplot2::aes(colour = .data$limiting)) +
@@ -134,9 +165,8 @@ autoplot.npp_climate <- function(object, x = NULL, xlab = NULL, ...) {
   } else {
     p <- p + ggplot2::geom_point()
   }
-  p + ggplot2::labs(x = xlab, y = "NPP (gC m-2 yr-1)",
-                    title = paste("Potential NPP,", attr(object, "model"),
-                                  "model")) +
+  p + ggplot2::labs(x = xlab, y = paste0("NPP (", attr(object, "units"), ")")) +
     ggplot2::theme_minimal() +
-    ggplot2::theme(legend.position = "bottom")
+    ggplot2::theme(legend.position = "bottom") +
+    theme_sample_axis(df$x)
 }

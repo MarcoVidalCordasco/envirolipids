@@ -15,12 +15,12 @@ fIIIc_), as fractions or percentages.}
 samples are numbered by row.}
 }
 \value{
-A data frame with columns `id`, `tetra`, `penta` and `hexa`; each
-  row sums to 1.
+A data frame with columns \code{id}, \code{tetra}, \code{penta} and \code{hexa}; each
+row sums to 1.
 }
 \description{
 Sums the fractional abundances of tetra-, penta- and
-  hexamethylated brGDGTs for each sample.
+hexamethylated brGDGTs for each sample.
 }
 \examples{
 data(example_data)

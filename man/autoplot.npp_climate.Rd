@@ -7,11 +7,12 @@
 \method{autoplot}{npp_climate}(object, x = NULL, xlab = NULL, ...)
 }
 \arguments{
-\item{object}{An `npp_climate` object from [npp_miami()] or
-[npp_thornthwaite()].}
+\item{object}{An \code{npp_climate} object from \code{\link[=npp_miami]{npp_miami()}} or
+\code{\link[=npp_thornthwaite]{npp_thornthwaite()}}.}
 
-\item{x}{Optional numeric vector (e.g. sample age or depth), one value per
-sample, to use as the x axis. Defaults to the sample id.}
+\item{x}{Optional vector with one value per sample. A numeric vector (e.g.
+sample age or depth) gives a continuous axis; anything else is treated as
+sample labels. If \code{NULL} (default), samples are plotted by id.}
 
 \item{xlab}{Label for the x axis.}
 
@@ -19,7 +20,7 @@ sample, to use as the x axis. Defaults to the sample id.}
 }
 \value{
 A ggplot object. For the Miami model, points are coloured by the
-  limiting factor.
+limiting factor.
 }
 \description{
 Plot climate-based NPP

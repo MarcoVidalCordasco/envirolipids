@@ -1,7 +1,8 @@
 #' Diagnostic plots for the applicability check
 #'
 #' @description Plots the results of [npp_brgdgt_applicable()]:
-#'   * `"mahalanobis"`: Mahalanobis distance of each sample, with the cut-off;
+#'   * `"mahalanobis"`: Mahalanobis distance of each sample, with the cut-off,
+#'     by sample or along a numeric `x` such as age;
 #'   * `"pca"`: samples on the first two principal components, over the
 #'     training data;
 #'   * `"ternary"`: ternary plot of methylation groups, with training samples
@@ -11,6 +12,10 @@
 #'
 #' @param object A `brgdgt_applicability` object.
 #' @param type Which plot to draw.
+#' @param x For `type = "mahalanobis"`, an optional vector with one value per
+#'   sample to use as the x axis (e.g. age or depth). If `NULL` (default),
+#'   samples are plotted by id.
+#' @param xlab For `type = "mahalanobis"`, label for the x axis.
 #' @param n_sites For `type = "map"`, number of most similar sites to show.
 #' @param ... Not used.
 #'
@@ -19,16 +24,22 @@
 autoplot.brgdgt_applicability <- function(object,
                                           type = c("mahalanobis", "pca",
                                                    "ternary", "map"),
+                                          x = NULL, xlab = NULL,
                                           n_sites = 10, ...) {
   # match.arg() picks the first type by default and gives a helpful error for
   # unknown types. Each type has its own plotting function below, which only
   # reads from `object` and never recomputes the diagnostics.
   type <- match.arg(type)
-  switch(type,
-         mahalanobis = plot_mahalanobis(object),
-         pca = plot_pca(object),
-         ternary = plot_ternary(object),
-         map = plot_similarity_map(object, n_sites))
+  if (is.null(xlab)) {
+    xlab <- if (is.null(x)) "Sample" else deparse(substitute(x))
+  }
+  switch(
+    type,
+    mahalanobis = plot_mahalanobis(object, x, xlab = xlab),
+    pca = plot_pca(object),
+    ternary = plot_ternary(object),
+    map = plot_similarity_map(object, n_sites)
+  )
 }
 
 # Colours for samples within (green) and outside (red) the training domain,
@@ -47,23 +58,23 @@ scale_domain <- function() {
 # Logical -> factor with both levels always present (needed for drop = FALSE)
 domain_factor <- function(x) factor(x, levels = c("TRUE", "FALSE"))
 
-# One point per sample, in input order, with the chi-squared cut-off as a
+# One point per sample (by id, or along x), with the empirical cut-off as a
 # dashed line: points above the line are outside the training domain
-plot_mahalanobis <- function(object) {
+plot_mahalanobis <- function(object, x = NULL, xlab = "Sample") {
   df <- object$samples
-  # use the row position rather than id, as ids need not be numeric
-  df$index <- seq_len(nrow(df))
+  # same x handling as the prediction plots: sample labels or a numeric axis
+  df$x <- plot_x(df, x)
   df$within_domain <- domain_factor(df$within_domain)
-  ggplot2::ggplot(df, ggplot2::aes(x = .data$index, y = .data$mahalanobis,
+  ggplot2::ggplot(df, ggplot2::aes(x = .data$x, y = .data$mahalanobis,
                                    colour = .data$within_domain)) +
     ggplot2::geom_hline(yintercept = object$threshold_value,
                         linetype = "dashed", colour = "red", alpha = 0.7) +
     ggplot2::geom_point(size = 3) +
     scale_domain() +
-    ggplot2::labs(title = "Mahalanobis distance to training data",
-                  x = "Sample index", y = "Mahalanobis distance") +
+    ggplot2::labs(x = xlab, y = "Mahalanobis distance") +
     ggplot2::theme_minimal() +
-    ggplot2::theme(legend.position = "bottom")
+    ggplot2::theme(legend.position = "bottom") +
+    theme_sample_axis(df$x)
 }
 
 # New samples (coloured by domain) over the training data (grey) on the
@@ -83,8 +94,7 @@ plot_pca <- function(object) {
                         ggplot2::aes(colour = .data$within_domain),
                         size = 3) +
     scale_domain() +
-    ggplot2::labs(title = "Samples vs training data in CLR space",
-                  x = paste0("PC1 (", pct[1], "%)"),
+    ggplot2::labs(x = paste0("PC1 (", pct[1], "%)"),
                   y = paste0("PC2 (", pct[2], "%)")) +
     ggplot2::theme_minimal() +
     ggplot2::theme(legend.position = "bottom")
@@ -94,8 +104,10 @@ plot_pca <- function(object) {
 # The triangle has vertices penta = (0, 0), hexa = (1, 0) and
 # tetra = (0.5, sqrt(3)/2). A composition is drawn at the weighted average of
 # the vertices, weighted by its three proportions (which sum to 1):
+# nolint start: commented_code_linter.
 #   x = 0 * penta + 1 * hexa + 0.5 * tetra
 #   y = (sqrt(3) / 2) * tetra
+# nolint end
 ternary_xy <- function(df) {
   data.frame(x = df$hexa + df$tetra / 2, y = df$tetra * sqrt(3) / 2)
 }
@@ -150,7 +162,6 @@ plot_ternary <- function(object) {
     # equal axis scaling keeps the triangle equilateral; clip = "off" stops
     # the vertex labels being cut off at the panel edge
     ggplot2::coord_equal(clip = "off") +
-    ggplot2::labs(title = "brGDGT methylation groups") +
     ggplot2::theme_void() +
     ggplot2::theme(legend.position = "bottom",
                    plot.margin = ggplot2::margin(10, 30, 10, 30))
@@ -200,8 +211,6 @@ plot_similarity_map <- function(object, n_sites = 10) {
     ggplot2::scale_size_continuous(range = c(3, 8), guide = "none") +
     # a fixed aspect ratio stops the map stretching with the plot size
     ggplot2::coord_fixed(1.3) +
-    ggplot2::labs(title = "Training sites with the most similar brGDGTs",
-                  subtitle = "Euclidean distance in CLR space",
-                  x = "Longitude", y = "Latitude") +
+    ggplot2::labs(x = "Longitude", y = "Latitude") +
     ggplot2::theme_minimal()
 }

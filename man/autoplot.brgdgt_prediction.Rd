@@ -7,11 +7,12 @@
 \method{autoplot}{brgdgt_prediction}(object, x = NULL, xlab = NULL, ...)
 }
 \arguments{
-\item{object}{A `brgdgt_prediction` object from [npp_brgdgt()] or
-[temp_brgdgt()].}
+\item{object}{A \code{brgdgt_prediction} object from \code{\link[=npp_brgdgt]{npp_brgdgt()}} or
+\code{\link[=temp_brgdgt]{temp_brgdgt()}}.}
 
-\item{x}{Optional numeric vector (e.g. sample age or depth), one value per
-sample, to use as the x axis. Defaults to the sample id.}
+\item{x}{Optional vector with one value per sample. A numeric vector (e.g.
+sample age or depth) gives a continuous axis; anything else is treated as
+sample labels. If \code{NULL} (default), samples are plotted by id.}
 
 \item{xlab}{Label for the x axis.}
 
@@ -21,6 +22,12 @@ sample, to use as the x axis. Defaults to the sample id.}
 A ggplot object.
 }
 \description{
-Plots predicted values (with the 95% interval across trees
-  if available) against sample id or a supplied variable such as age.
+Plots predicted values, with the 95\% interval across trees if
+available. There are two layouts:
+\itemize{
+\item by sample (the default, e.g. for modern samples): one point per
+sample, with error bars, labelled by sample id;
+\item along a numeric \code{x} (e.g. age or depth for a sediment core): a line
+through the samples, with the interval as a ribbon.
+}
 }
