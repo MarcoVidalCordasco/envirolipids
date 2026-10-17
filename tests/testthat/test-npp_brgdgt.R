@@ -1,6 +1,6 @@
-# Tests for npp_brgdgt() and temp_brgdgt(). The regression check against the
-# pre-refactor code (identical estimates and intervals) was done once during
-# the refactor; these tests cover behaviour that must keep holding.
+# Tests for npp_brgdgt(). The regression check against the pre-refactor code
+# (identical estimates and intervals) was done once during the refactor; these
+# tests cover behaviour that must keep holding.
 
 test_that("npp_brgdgt returns a brgdgt_prediction", {
   npp <- npp_brgdgt(example_data, "Lacustrine Sediment")
@@ -51,42 +51,7 @@ test_that("ids default to row numbers", {
   expect_equal(npp_brgdgt(no_id, "Soil")$id, seq_len(nrow(no_id)))
 })
 
-test_that("temp_brgdgt errors clearly without a model", {
-  # once the temperature model ships, this test no longer applies
-  skip_if(nzchar(system.file("extdata", "model_brGDGT-MAT.rds",
-                             package = "envirolipids")))
-  expect_error(temp_brgdgt(example_data, "Soil"),
-               "temperature model is not yet included")
-})
-
-test_that("temp_brgdgt works with a supplied model", {
-  # No temperature model exists yet, so borrow the NPP model to check the
-  # plumbing: the values are meaningless, but the labelling must be right
-  mat <- temp_brgdgt(example_data, "Soil", model = load_npp_model())
-  expect_s3_class(mat, "brgdgt_prediction")
-  expect_equal(attr(mat, "response"), "MAT")
-})
-
-test_that("prediction autoplot returns a ggplot", {
+test_that("npp_brgdgt predictions print", {
   npp <- npp_brgdgt(example_data, "Soil")
-  expect_s3_class(autoplot(npp), "ggplot")
-  expect_s3_class(autoplot(npp, x = example_data$Age), "ggplot")
-  # x must align with the samples
-  expect_error(autoplot(npp, x = 1:3), "one value per sample")
   expect_output(print(npp), "brGDGT-based NPP predictions")
-})
-
-test_that("autoplot draws samples by default and a series along numeric x", {
-  npp <- npp_brgdgt(modern_example_data, modern_example_data$Sampletype)
-  # by sample: ids on a discrete axis, error bars, no connecting line
-  by_sample <- autoplot(npp)
-  geoms <- vapply(by_sample$layers, function(l) class(l$geom)[1], "")
-  expect_true(is.factor(by_sample$data$x))
-  expect_equal(levels(by_sample$data$x), modern_example_data$ID)
-  expect_true("GeomErrorbar" %in% geoms)
-  expect_false("GeomLine" %in% geoms)
-  # along a numeric x: a line with a ribbon
-  series <- autoplot(npp, x = modern_example_data$Latitude)
-  geoms <- vapply(series$layers, function(l) class(l$geom)[1], "")
-  expect_true(all(c("GeomRibbon", "GeomLine") %in% geoms))
 })

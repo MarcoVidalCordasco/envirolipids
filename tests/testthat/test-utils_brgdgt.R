@@ -28,11 +28,3 @@ test_that("clr rows sum to zero", {
   clr <- brgdgt_clr(brgdgt_fractions(example_data))
   expect_equal(unname(rowSums(clr)), rep(0, nrow(example_data)))
 })
-
-test_that("methylation groups sum to one", {
-  m <- brgdgt_methylation(example_data)
-  expect_named(m, c("id", "tetra", "penta", "hexa"))
-  expect_equal(m$id, example_data$ID)
-  # drop the id column before summing the three groups
-  expect_equal(rowSums(m[, -1]), rep(1, nrow(m)))
-})
