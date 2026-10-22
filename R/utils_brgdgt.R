@@ -76,3 +76,53 @@ methylation_groups <- function(fractions) {
   # rescale so the three groups sum exactly to 1, as needed for a ternary plot
   as.data.frame(groups / rowSums(groups))
 }
+
+
+
+# MBT'5me index (Naafs et al., 2017, Eq. 4) This is used to test whether some specific predictive
+# formulas of MAT can be used:
+
+brgdgt_mbt5me <- function(fractions) {
+  
+  numerator <- rowSums(
+    fractions[, c("fIa", "fIb", "fIc"), drop = FALSE]
+  )
+  
+  denominator <- rowSums(
+    fractions[, c(
+      "fIa", "fIb", "fIc",
+      "fIIa", "fIIb", "fIIc", "fIIIa"
+    ), drop = FALSE]
+  )
+  
+  result <- numerator / denominator
+  result[denominator == 0] <- NA_real_
+  
+  result
+}
+
+# IR6me: relative abundance of 6-methyl isomers
+# among penta- and hexamethylated brGDGTs
+brgdgt_ir6me <- function(fractions) {
+  
+  six_methyl <- rowSums(
+    fractions[, c(
+      "fIIa_", "fIIb_", "fIIc_",
+      "fIIIa_", "fIIIb_", "fIIIc_"
+    ), drop = FALSE]
+  )
+  
+  five_methyl <- rowSums(
+    fractions[, c(
+      "fIIa", "fIIb", "fIIc",
+      "fIIIa", "fIIIb", "fIIIc"
+    ), drop = FALSE]
+  )
+  
+  denominator <- five_methyl + six_methyl
+  
+  result <- six_methyl / denominator
+  result[denominator == 0] <- NA_real_
+  
+  result
+}

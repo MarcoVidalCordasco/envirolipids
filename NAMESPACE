@@ -16,8 +16,7 @@ export(npp_brgdgt_applicable)
 export(npp_miami)
 export(npp_thornthwaite)
 export(temp_brgdgt)
-importFrom(ggplot2,
-  .data,
-  autoplot
-)
+export(temp_brgdgt_methods)
+importFrom(ggplot2,.data)
+importFrom(ggplot2,autoplot)
 importFrom(randomForest,randomForest)

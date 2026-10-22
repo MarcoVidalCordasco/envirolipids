@@ -13,7 +13,6 @@ A tool to predict Net Primary Productivity (NPP) from relative abundance of indi
 
 Authors:
 \itemize{
-  \item Marco A. Vidal-Cordasco \email{mav54@cam.ac.uk}
   \item Andrea Manica \email{am315@cam.ac.uk}
 }
 

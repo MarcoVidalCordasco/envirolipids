@@ -2,51 +2,75 @@
 % Please edit documentation in R/temp_brgdgt.R
 \name{temp_brgdgt}
 \alias{temp_brgdgt}
-\title{Predict temperature from brGDGT data}
+\title{Predict air-temperature metrics from brGDGTs}
 \usage{
 temp_brgdgt(
   data,
   sample_type,
-  ci = TRUE,
+  method = NULL,
+  ci = FALSE,
   id_col = "ID",
-  model = load_temp_model()
+  model = NULL
 )
 }
 \arguments{
-\item{data}{A data frame with the 15 brGDGT columns (fIa, fIb, fIc, fIIa,
-fIIa_, fIIb, fIIb_, fIIc, fIIc_, fIIIa, fIIIa_, fIIIb, fIIIb_, fIIIc,
-fIIIc_), given either as fractions (summing to 1) or percentages
-(summing to 100). Columns are matched by name.}
+\item{data}{A data frame with the 15 brGDGT compounds as fractions or
+percentages.}
 
-\item{sample_type}{Sample type, either a single value or one per sample.
-One of "Lacustrine Sediment", "Lacustrine SPM", "Low DO Lacustrine SPM",
-"Peat", "Riverine Sediment and SPM", "Soil" or
-"Lacustrine Meso/Microcosm".}
+\item{sample_type}{One sample-material category: \code{"soils"},
+\code{"mineral_soils"}, or \code{"lake_sediments"}. Spaces and singular forms such
+as \code{"mineral soils"} and \code{"lake sediment"} are also accepted. Each call
+assumes the samples share the selected material category.}
 
-\item{ci}{Logical; if \code{TRUE} (default), adds the 2.5\% and 97.5\% quantiles
-of the predictions across trees.}
+\item{method}{One of the method names returned by
+\code{temp_brgdgt_methods(sample_type)}. Required; no calibration is selected
+silently. The special \code{"random_forest"} method remains available if a
+fitted temperature model is supplied in \code{model}.}
 
-\item{id_col}{Name of the column holding sample identifiers. If absent,
-samples are numbered by row.}
+\item{ci}{For \code{method = "random_forest"}, calculate tree-quantile bounds.
+Linear calibration RMSEs are not confidence intervals.}
 
-\item{model}{The fitted model; defaults to \code{\link[=load_temp_model]{load_temp_model()}}.}
+\item{id_col}{Name of the sample identifier column, default \code{"ID"}.}
+
+\item{model}{Fitted random forest model, only for \code{method = "random_forest"}.}
 }
 \value{
-A \code{brgdgt_prediction} data frame with columns \code{id}, \code{sample_type},
-\code{estimate} and, if \code{ci = TRUE}, \code{lower} and \code{upper}. MAT is in degrees C.
+A \code{brgdgt_prediction} data frame giving the estimate, target
+(MAT / MAF / GDD0), units, publication, equation, calibration material,
+selected sample material, and published RMSE. The restricted Naafs
+equations set estimates to \code{NA} for samples with IR6me >= 0.5.
+Other environmental limitations (for example freshwater-only lake
+calibrations) remain the user's responsibility.
 }
 \description{
-Predicts mean annual air temperature (MAT) from the fractional
-abundances of 15 brGDGTs, using a centred log-ratio (CLR) transformation
-and a pre-trained random forest model.
+Select the sample material first, then choose a published temperature
+calibration appropriate to that material. Published equations estimate
+air-temperature metrics.
 
-The temperature model is not yet shipped with the package; until it is,
-a fitted model must be supplied via \code{model}.
+Available sample types are \code{"soils"}, \code{"mineral_soils"}, and
+\code{"lake_sediments"}. The first category offers the general soil
+calibrations (Peterse and De Jonge). \code{"mineral_soils"} additionally offers
+the Naafs calibrations developed for mineral soils. \code{"lake_sediments"}
+offers lake-sediment calibrations (Russell, Raberg and Zhu).
+
+MAT = mean annual air temperature (deg C); MAF = mean temperature of months
+above freezing (deg C); GDD0 = growing degree days above 0 C (deg C days/year).
+
+Call \code{temp_brgdgt_methods(sample_type)} to see the methods available for
+your material, then pass one of those names as \code{method}.
 }
 \examples{
-\dontrun{
 data(example_data)
-mat <- temp_brgdgt(example_data, sample_type = "Lacustrine Sediment")
-ggplot2::autoplot(mat, x = example_data$Age)
+temp_brgdgt_methods("mineral_soils")
+temp_brgdgt_methods("lake_sediments")
+soil_mat <- temp_brgdgt(example_data, sample_type = "mineral_soils",
+                        method = "naafs2017_global")
+lake_maf <- temp_brgdgt(example_data, sample_type = "lake_sediments",
+                        method = "zhu2025_1")
 }
+\references{
+Peterse et al. (2012); De Jonge et al. (2014);
+Naafs et al. (2017), Organic Geochemistry 106, 48-56;
+Russell et al. (2018); Raberg et al. (2021), Biogeosciences 18, 3579-3603;
+Zhu et al. (2025), Quaternary Science Reviews 357, 109319.
 }
